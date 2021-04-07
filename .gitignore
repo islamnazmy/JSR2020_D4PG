@@ -1,1 +1,4 @@
 .venv/*
+.idea/*
+Tensorboard/*
+__pycache__/*
