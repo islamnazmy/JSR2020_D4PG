@@ -32,3 +32,4 @@ typing-extensions==3.7.4.3
 Werkzeug==1.0.1
 xvfbwrapper==0.2.9
 zipp==3.4.1
+stable-baselines==2.10.0
