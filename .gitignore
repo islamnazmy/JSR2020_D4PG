@@ -3,3 +3,5 @@ venv/*
 .idea/*
 Tensorboard/*
 __pycache__/*
+*.egg-info
+gymDRLGuidance/__pycache__/*
