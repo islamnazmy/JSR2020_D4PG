@@ -22,9 +22,15 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib.gridspec as gridspec
 
-class Environment:
+import gym
+from gym import spaces
+import stable_baselines
+from stable_baselines.common.env_checker import check_env
 
-    def __init__(self):
+
+class Environment(gym.Env):
+
+    def __init__(self, use_dynamics):
         ##################################
         ##### Environment Properties #####
         ##################################
@@ -32,10 +38,10 @@ class Environment:
         self.IRRELEVANT_STATES        = [0,1,2] # No obstacle: [0,1,2,6,7] ; Yes obstacle: [0,1,2]
         self.STATE_SIZE               = self.TOTAL_STATE_SIZE - len(self.IRRELEVANT_STATES) # total number of relevant states
         self.ACTION_SIZE              = 3 # [x_dot, y_dot, theta_dot]
-        self.LOWER_ACTION_BOUND       = np.array([-0.1, -0.1, -10*np.pi/180]) # [m/s, m/s, rad/s] stationary=[-0.05, -0.05, -10*np.pi/180]; rotating=[-0.1, -0.1, -10*np.pi/180]
-        self.UPPER_ACTION_BOUND       = np.array([ 0.1,  0.1,  10*np.pi/180]) # [m/s, m/s, rad/s] stationary=[ 0.05,  0.05,  10*np.pi/180]; rotating=[ 0.1,  0.1,  10*np.pi/180]
-        self.LOWER_STATE_BOUND        = np.array([  0.,   0., -4*2*np.pi,  0.,  0., -4*2*np.pi,  0., 0. ]) # [m, m, rad, m, m, rad, m, m]
-        self.UPPER_STATE_BOUND        = np.array([ 3.7,  2.4,  4*2*np.pi, 3.7, 2.4,  4*2*np.pi, 3.7, 2.4]) # [m, m, rad, m, m, rad, m, m]
+        self.LOWER_ACTION_BOUND       = np.array([-0.1, -0.1, -10*np.pi/180])  # [m/s, m/s, rad/s] stationary=[-0.05, -0.05, -10*np.pi/180]; rotating=[-0.1, -0.1, -10*np.pi/180]
+        self.UPPER_ACTION_BOUND       = np.array([ 0.1,  0.1,  10*np.pi/180])  # [m/s, m/s, rad/s] stationary=[ 0.05,  0.05,  10*np.pi/180]; rotating=[ 0.1,  0.1,  10*np.pi/180]
+        self.LOWER_STATE_BOUND        = np.array([  0.,   0., -4*2*np.pi])  # [m, m, rad]
+        self.UPPER_STATE_BOUND        = np.array([ 3.7,  2.4,  4*2*np.pi])  # [m, m, rad]
         self.NORMALIZE_STATE          = True # Normalize state on each timestep to avoid vanishing gradients
         self.RANDOMIZE                = True # whether or not to RANDOMIZE the state & target location
         self.NOMINAL_INITIAL_POSITION = np.array([3.0, 1.0, 0.0])
@@ -55,7 +61,8 @@ class Environment:
         self.REWARD_TYPE              = True # True = Linear; False = Exponential
         self.REWARD_WEIGHTING         = [0.5, 0.5, 0.1] # How much to weight the rewards in the state
         self.REWARD_MULTIPLIER        = 250 # how much to multiply the differential reward by
-        
+        self.use_dynamics = use_dynamics
+
         # Obstacle properties
         self.USE_OBSTACLE              = True # Also change self.IRRELEVANT_STATES
         self.OBSTABLE_PENALTY          = 15 # [rewards/second] How bad is it to collide with the obstacle?
@@ -91,6 +98,10 @@ class Environment:
         self.PENALIZE_VELOCITY        = True # Should the velocity be penalized with severity proportional to how close it is to the desired location? Added Dec 11 2019
         self.VELOCITY_PENALTY         = [0.5, 0.5, 0.0] # [x, y, theta] stationary: [0.5, 0.5, 0.5/250] ; rotating [0.5, 0.5, 0] Amount the chaser should be penalized for having velocity near the desired location
 
+        self.observation_space = spaces.Box(self.LOWER_STATE_BOUND, self.UPPER_STATE_BOUND)  # x, y, x_Rate, y_Rate, att, att_Rate
+        self.action_space = spaces.Box(self.LOWER_ACTION_BOUND, self.UPPER_ACTION_BOUND)  # x_Rate, y_Rate, att_Rate
+        print(self.observation_space.sample())
+
     ###################################
     ##### Seeding the environment #####
     ###################################
@@ -100,7 +111,7 @@ class Environment:
     ######################################
     ##### Resettings the Environment #####
     ######################################
-    def reset(self, use_dynamics, test_time):
+    def reset(self):
         # This method resets the state and returns it
         """ NOTES:
                - if use_dynamics = True -> use dynamics
@@ -109,11 +120,12 @@ class Environment:
         # Setting the default to be kinematics
         self.dynamics_flag = False
 
+
         # Resetting phase number so we complete phase 0 before moving on to phase 1
         self.phase_number = 0
 
         # Logging whether it is test time for this episode
-        self.test_time = test_time
+        self.test_time = 0
 
         # If we are randomizing the initial consitions and state
         if self.RANDOMIZE:
@@ -140,7 +152,7 @@ class Environment:
         # How long is the position portion of the state
         self.POSITION_STATE_LENGTH = len(self.state)
 
-        if use_dynamics:
+        if self.use_dynamics:
             # Setting the dynamics state to be equal, initially, to the kinematics state, plus the velocity initial conditions state
             velocity_initial_conditions = np.array([0., 0., 0.])
             self.state = np.concatenate((self.state, velocity_initial_conditions))
@@ -152,6 +164,13 @@ class Environment:
 
         # Resetting the differential reward
         self.previous_position_reward = [None, None, None]
+
+        # Updating the state error
+        self.error = self.state[:3] - self.hold_point[:3]
+
+        print(self.error-self.observation_space.sample())
+
+        return self.error
 
 
     #####################################
@@ -235,9 +254,14 @@ class Environment:
         # Update the hold point location
         self.hold_point = self.docking_port + np.array([np.cos(self.target_location[2])*(self.LENGTH*2 - 0.1), np.sin(self.target_location[2])*(self.LENGTH*2 - 0.1), 0])
 
+        # Return the state error for training
+        self.error = self.state[:3] - self.target_location[:3]
+
+        # Empty dictionary
+        info = {}
 
         # Return the (state, reward, done)
-        return self.state, reward, done, guidance_position
+        return np.array(self.error), reward, done, info
 
     def check_phase_number(self):
         # If the time is past PHASE_1_TIME seconds, automatically enter phase 2
@@ -696,3 +720,8 @@ def render(states, actions, desired_pose, instantaneous_reward_log, cumulative_r
 
     del temp_env
     plt.close(figure)
+
+
+if __name__ == "__main__":
+    env = Environment(use_dynamics=False)
+    check_env(env)
