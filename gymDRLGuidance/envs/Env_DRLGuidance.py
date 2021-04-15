@@ -43,7 +43,7 @@ class Environment(gym.Env):
         self.LOWER_STATE_BOUND        = np.array([-3.7, -2.4, -4*2*np.pi])  # [m, m, rad]
         self.UPPER_STATE_BOUND        = np.array([ 3.7,  2.4,  4*2*np.pi])  # [m, m, rad]
         self.NORMALIZE_STATE          = True  # Normalize state on each timestep to avoid vanishing gradients
-        self.RANDOMIZE                = False  # whether or not to RANDOMIZE the state & target location
+        self.RANDOMIZE                = True  # whether or not to RANDOMIZE the state & target location
         self.NOMINAL_INITIAL_POSITION = np.array([3.0, 1.0, 0.0])
         self.NOMINAL_TARGET_POSITION  = np.array([1.85, 0.6, 0]) # stationary=[1.85, 0.6, np.pi/2]; rotating=[1.85, 1.2, 0]
         self.MIN_V                    = -1000. # -350
@@ -164,7 +164,7 @@ class Environment(gym.Env):
         self.previous_position_reward = [None, None, None]
 
         # Updating the state error
-        self.error = self.state[:3] - self.hold_point[:3]
+        self.error = self.hold_point[:3] - self.state[:3]
 
         return self.error
 
@@ -250,13 +250,13 @@ class Environment(gym.Env):
         self.hold_point = self.docking_port + np.array([np.cos(self.target_location[2])*(self.LENGTH*2 - 0.1), np.sin(self.target_location[2])*(self.LENGTH*2 - 0.1), 0])
 
         # Return the state error for training
-        self.error = self.state[:3] - self.target_location[:3]
+        self.error = self.target_location[:3] - self.state[:3]
 
         # Empty dictionary
         info = {}
 
         # Return the (state, reward, done)
-        return np.array(self.error), reward, done, info
+        return self.error, reward, done, info
 
     def check_phase_number(self):
         # If the time is past PHASE_1_TIME seconds, automatically enter phase 2
