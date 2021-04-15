@@ -63,11 +63,15 @@ def run(showPlots):
         initial_state = env.reset()
         obs = initial_state
         position = env.state
+        hold_point_position = env.hold_point
+        docking_port_position = env.docking_port
         reward_vec = [0]
         while not env.is_done():
             action, _states = model.predict(obs)
             obs, rewards, done, info = env.step(action)
             position = np.vstack((position, env.state))
+            hold_point_position = np.vstack((hold_point_position, env.hold_point))
+            docking_port_position = np.vstack((docking_port_position, env.docking_port))
             reward_vec = np.vstack((reward_vec, rewards))
 
         data = np.load('evaluations.npz')
@@ -75,14 +79,15 @@ def run(showPlots):
 
         plt.figure(1)
         plt.plot(position[:, 0], position[:, 1])
-        plt.plot(env.target_location[0], env.target_location[1], 'rx')
-        plt.plot(env.hold_point[0], env.hold_point[1], 'b+')
-        plt.plot(env.docking_port[0], env.docking_port[1], 'go')
+        plt.plot(env.target_location[0], env.target_location[1], 'r')
+        plt.plot(hold_point_position[:, 0], hold_point_position[:, 1], 'b')
+        plt.plot(docking_port_position[:, 0], docking_port_position[:, 1], 'g')
         plt.plot(position[0, 0], position[0, 1], 'kx')
         plt.figure(2)
         plt.plot(reward_vec)
         plt.figure(3)
         plt.plot(position[:, 2])
+        plt.plot(hold_point_position[:, 2], 'r-')
         plt.figure(4)
         plt.plot(data['timesteps'], training_data)
         plt.show()
