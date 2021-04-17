@@ -45,7 +45,7 @@ class Environment(gym.Env):
         self.NORMALIZE_STATE          = True  # Normalize state on each timestep to avoid vanishing gradients
         self.RANDOMIZE                = True  # whether or not to RANDOMIZE the state & target location
         self.NOMINAL_INITIAL_POSITION = np.array([3.0, 1.0, 0.0])
-        self.NOMINAL_TARGET_POSITION  = np.array([1.85, 0.6, 0]) # stationary=[1.85, 0.6, np.pi/2]; rotating=[1.85, 1.2, 0]
+        self.NOMINAL_TARGET_POSITION  = np.array([1.85, 0.6, np.pi/2]) # stationary=[1.85, 0.6, np.pi/2]; rotating=[1.85, 1.2, 0]
         self.MIN_V                    = -1000. # -350
         self.MAX_V                    =  100.
         self.N_STEP_RETURN            =   1
@@ -61,14 +61,13 @@ class Environment(gym.Env):
         self.REWARD_TYPE              = True # True = Linear; False = Exponential
         self.REWARD_WEIGHTING         = [0.5, 0.5, 0.1] # How much to weight the rewards in the state
         self.REWARD_MULTIPLIER        = 250 # how much to multiply the differential reward by
-        self.use_dynamics             = False
 
         # Obstacle properties
         self.USE_OBSTACLE              = False # Also change self.IRRELEVANT_STATES
-        self.OBSTABLE_PENALTY          = 15 # [rewards/second] How bad is it to collide with the obstacle?
-        self.OBSTABLE_DISTANCE         = 0.2 # [m] radius of which the obstacle penalty will be applied
+        self.OBSTACLE_PENALTY          = 15 # [rewards/second] How bad is it to collide with the obstacle?
+        self.OBSTACLE_DISTANCE         = 0.2 # [m] radius of which the obstacle penalty will be applied
         self.OBSTACLE_INITIAL_POSITION = np.array([1.2, 1.2]) # [m]
-        self.OBSTABLE_VELOCITY         = np.array([0.0 , 0.0]) # [m/s]
+        self.OBSTACLE_VELOCITY         = np.array([0.0 , 0.0]) # [m/s]
 
         # Test time properties
         self.TEST_ON_DYNAMICS         = False # Whether or not to use full dynamics along with a PD controller at test time
@@ -88,13 +87,13 @@ class Environment(gym.Env):
         
         # Target collision properties
         self.TARGET_COLLISION_DISTANCE = self.LENGTH # [m] how close chaser and target need to be before a penalty is applied
-        self.TARGET_COLLISION_PENALTY  = 15           # [rewards/second] penalty given for colliding with target  
+        self.TARGET_COLLISION_PENALTY  = 0           # [rewards/second] penalty given for colliding with target
 
         # Additional properties
         self.PHASE_1_TIME             = 45 # [s] the time to automatically switch from phase 0 to phase 1--45 for stationary; 90 for rotating
         self.DOCKING_TOO_FAST_PENALTY = 0 # [rewards/s] penalty for docking too quickly
         self.MAX_DOCKING_SPEED        = [0.02, 0.02, 10]
-        self.TARGET_ANGULAR_VELOCITY  = 0.0698 #[rad/s] constant target angular velocity stationary: 0 ; rotating: 0.0698
+        self.TARGET_ANGULAR_VELOCITY  = 0.0 #[rad/s] constant target angular velocity stationary: 0 ; rotating: 0.0698
         self.PENALIZE_VELOCITY        = True # Should the velocity be penalized with severity proportional to how close it is to the desired location? Added Dec 11 2019
         self.VELOCITY_PENALTY         = [0.5, 0.5, 0.0] # [x, y, theta] stationary: [0.5, 0.5, 0.5/250] ; rotating [0.5, 0.5, 0] Amount the chaser should be penalized for having velocity near the desired location
 
@@ -112,12 +111,9 @@ class Environment(gym.Env):
     ######################################
     def reset(self):
         # This method resets the state and returns it
-        """ NOTES:
-               - if use_dynamics = True -> use dynamics
-               - if test_time = True -> do not add "controller noise" to the kinematics
-        """
+
         # Setting the default to be kinematics
-        self.dynamics_flag = False
+        self.use_dynamics = True
 
         # Resetting phase number so we complete phase 0 before moving on to phase 1
         self.phase_number = 0
@@ -156,6 +152,8 @@ class Environment(gym.Env):
             self.state = np.concatenate((self.state, velocity_initial_conditions))
             """ Note: dynamics_state = [x, y, theta, xdot, ydot, thetadot] """
             self.dynamics_flag = True # for this episode, dynamics will be used
+        else:
+            self.dynamics_flag = False
 
         # Resetting the time
         self.time = 0.
@@ -238,7 +236,7 @@ class Environment(gym.Env):
         self.check_phase_number()
         
         # Step obstacle's position ahead one timestep
-        self.obstacle_location += self.OBSTABLE_VELOCITY*self.TIMESTEP
+        self.obstacle_location += self.OBSTACLE_VELOCITY*self.TIMESTEP
 
         # Step target's attitude ahead one timestep
         self.target_location[2] += self.TARGET_ANGULAR_VELOCITY*self.TIMESTEP
@@ -330,12 +328,12 @@ class Environment(gym.Env):
             reward -= self.LEAVE_GRID_PENALTY/self.TIMESTEP
 
         # Giving a large reward for completing the task
-        if np.sum(np.absolute(self.state[:self.POSITION_STATE_LENGTH] - desired_location)) < 0.01:
+        if np.sum(np.absolute(self.state[:self.POSITION_STATE_LENGTH] - desired_location)) < 0.1:
             reward += self.GOAL_REWARD
             
         # Giving a large penalty for colliding with the obstacle
-        if np.linalg.norm(self.state[:self.POSITION_STATE_LENGTH-1] - self.obstacle_location) <= self.OBSTABLE_DISTANCE and self.USE_OBSTACLE:
-            reward -= self.OBSTABLE_PENALTY
+        if np.linalg.norm(self.state[:self.POSITION_STATE_LENGTH-1] - self.obstacle_location) <= self.OBSTACLE_DISTANCE and self.USE_OBSTACLE:
+            reward -= self.OBSTACLE_PENALTY
             
         # Giving a penalty for colliding with the target
         if np.linalg.norm(self.state[:self.POSITION_STATE_LENGTH-1] - self.target_location[:-1]) <= self.TARGET_COLLISION_DISTANCE:
@@ -403,7 +401,12 @@ def dynamics_equations_of_motion(state, t, parameters):
     x, y, theta, xdot, ydot, thetadot = state
     control_effort, mass, inertia = parameters # unpacking parameters
 
-    derivatives = np.array((xdot, ydot, thetadot, control_effort[0]/mass, control_effort[1]/mass, control_effort[2]/inertia)).squeeze()
+    # Add Clohessy-Wiltshire dynamics
+    n = 0.0011440
+    xddot = 3*n*n*x + 2*n*ydot
+    yddot = -2*n*xdot
+
+    derivatives = np.array((xdot, ydot, thetadot, control_effort[0]/mass + xddot, control_effort[1]/mass + yddot, control_effort[2]/inertia)).squeeze()
 
     return derivatives
 
