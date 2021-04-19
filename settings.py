@@ -11,13 +11,13 @@ class Settings:
     ########################
 
     RUN_NAME               = 'Kirkados_default_run' # use just the name. If trying to restore from file, use name along with timestamp
-    ENVIRONMENT            = 'envs123456'
-    RECORD_VIDEO           = True
+    ENVIRONMENT            = 'Env_DRLGuidance'
+    RECORD_VIDEO           = False
     VIDEO_RECORD_FREQUENCY = 20 # Multiples of "CHECK_GREEDY_PERFORMANCE_EVERY_NUM_EPISODES"
     NOISELESS_AT_TEST_TIME = True # Whether or not to test without action noise (Keep at True unless debugging)
     LEARN_FROM_PIXELS      = False # False = learn from state (fully observed); True = learn from pixels (partially observed)
     RESUME_TRAINING        = False # If True, be sure to set "RUN_NAME" to the previous run's filename
-    USE_GPU_WHEN_AVAILABLE = True # As of Nov 19, 2018, it appears better to use CPU. Re-evaluate again later
+    USE_GPU_WHEN_AVAILABLE = False # As of Nov 19, 2018, it appears better to use CPU. Re-evaluate again later
     RANDOM_SEED            = 13
 
     #%%

@@ -29,17 +29,17 @@ class Environment:
         ##### Environment Properties #####
         ##################################
         self.TOTAL_STATE_SIZE         = 8 # [x, y, theta, desired_x_error, desired_y_error, desired_theta_error, obstable_distance_x, obstacle_distance_y]
-        self.IRRELEVANT_STATES        = [0,1,2] # No obstacle: [0,1,2,6,7] ; Yes obstacle: [0,1,2]
+        self.IRRELEVANT_STATES        = [0,1,2,6,7] # No obstacle: [0,1,2,6,7] ; Yes obstacle: [0,1,2]
         self.STATE_SIZE               = self.TOTAL_STATE_SIZE - len(self.IRRELEVANT_STATES) # total number of relevant states
         self.ACTION_SIZE              = 3 # [x_dot, y_dot, theta_dot]
-        self.LOWER_ACTION_BOUND       = np.array([-0.1, -0.1, -10*np.pi/180]) # [m/s, m/s, rad/s] stationary=[-0.05, -0.05, -10*np.pi/180]; rotating=[-0.1, -0.1, -10*np.pi/180]
-        self.UPPER_ACTION_BOUND       = np.array([ 0.1,  0.1,  10*np.pi/180]) # [m/s, m/s, rad/s] stationary=[ 0.05,  0.05,  10*np.pi/180]; rotating=[ 0.1,  0.1,  10*np.pi/180]
-        self.LOWER_STATE_BOUND        = np.array([  0.,   0., -4*2*np.pi,  0.,  0., -4*2*np.pi,  0., 0. ]) # [m, m, rad, m, m, rad, m, m]
-        self.UPPER_STATE_BOUND        = np.array([ 3.7,  2.4,  4*2*np.pi, 3.7, 2.4,  4*2*np.pi, 3.7, 2.4]) # [m, m, rad, m, m, rad, m, m]
+        self.LOWER_ACTION_BOUND       = np.array([-0.05, -0.05, -10*np.pi/180]) # [m/s, m/s, rad/s] stationary=[-0.05, -0.05, -10*np.pi/180]; rotating=[-0.1, -0.1, -10*np.pi/180]
+        self.UPPER_ACTION_BOUND       = np.array([ 0.05,  0.05,  10*np.pi/180]) # [m/s, m/s, rad/s] stationary=[ 0.05,  0.05,  10*np.pi/180]; rotating=[ 0.1,  0.1,  10*np.pi/180]
+        self.LOWER_STATE_BOUND        = np.array([-3.7,  -2.4,  -4*2*np.pi]) # [m, m, rad, m, m, rad, m, m]
+        self.UPPER_STATE_BOUND        = np.array([ 3.7,   2.4,   4*2*np.pi]) # [m, m, rad, m, m, rad, m, m]
         self.NORMALIZE_STATE          = True # Normalize state on each timestep to avoid vanishing gradients
         self.RANDOMIZE                = True # whether or not to RANDOMIZE the state & target location
         self.NOMINAL_INITIAL_POSITION = np.array([3.0, 1.0, 0.0])
-        self.NOMINAL_TARGET_POSITION  = np.array([1.85, 1.2, 0]) # stationary=[1.85, 0.6, np.pi/2]; rotating=[1.85, 1.2, 0]
+        self.NOMINAL_TARGET_POSITION  = np.array([1.85, 0.6, np.pi/2]) # stationary=[1.85, 0.6, np.pi/2]; rotating=[1.85, 1.2, 0]
         self.MIN_V                    = -1000. # -350
         self.MAX_V                    =  100.
         self.N_STEP_RETURN            =   1
@@ -48,23 +48,23 @@ class Environment:
         self.TARGET_REWARD            =   1. # reward per second
         self.FALL_OFF_TABLE_PENALTY   =   0.
         self.END_ON_FALL              = False # end episode on a fall off the table
-        self.GOAL_REWARD              =   0.
+        self.GOAL_REWARD              =   100.
         self.NEGATIVE_PENALTY_FACTOR  = 1.5 # How much of a factor to additionally penalize negative rewards
-        self.MAX_NUMBER_OF_TIMESTEPS  = 900 # per episode -- 450 for stationary, 900 for rotating
+        self.MAX_NUMBER_OF_TIMESTEPS  = 450 # per episode -- 450 for stationary, 900 for rotating
         self.ADDITIONAL_VALUE_INFO    = False # whether or not to include additional reward and value distribution information on the animations
         self.REWARD_TYPE              = True # True = Linear; False = Exponential
         self.REWARD_WEIGHTING         = [0.5, 0.5, 0.1] # How much to weight the rewards in the state
         self.REWARD_MULTIPLIER        = 250 # how much to multiply the differential reward by
         
         # Obstacle properties
-        self.USE_OBSTACLE              = True # Also change self.IRRELEVANT_STATES
+        self.USE_OBSTACLE              = False # Also change self.IRRELEVANT_STATES
         self.OBSTABLE_PENALTY          = 15 # [rewards/second] How bad is it to collide with the obstacle?
         self.OBSTABLE_DISTANCE         = 0.2 # [m] radius of which the obstacle penalty will be applied
         self.OBSTACLE_INITIAL_POSITION = np.array([1.2, 1.2]) # [m]
         self.OBSTABLE_VELOCITY         = np.array([0.0 , 0.0]) # [m/s]
 
         # Test time properties
-        self.TEST_ON_DYNAMICS         = True # Whether or not to use full dynamics along with a PD controller at test time
+        self.TEST_ON_DYNAMICS         = False # Whether or not to use full dynamics along with a PD controller at test time
         self.KINEMATIC_NOISE          = False # Whether or not to apply noise to the kinematics in order to simulate a poor controller
         self.KINEMATIC_NOISE_SD       = [0.02, 0.02, np.pi/100] # The standard deviation of the noise that is to be applied to each element in the state
         self.FORCE_NOISE_AT_TEST_TIME = False # [Default -> False] Whether or not to force kinematic noise to be present at test time
@@ -81,13 +81,13 @@ class Environment:
         
         # Target collision properties
         self.TARGET_COLLISION_DISTANCE = self.LENGTH # [m] how close chaser and target need to be before a penalty is applied
-        self.TARGET_COLLISION_PENALTY  = 15           # [rewards/second] penalty given for colliding with target  
+        self.TARGET_COLLISION_PENALTY  = 0           # [rewards/second] penalty given for colliding with target
 
         # Additional properties
-        self.PHASE_1_TIME             = 90 # [s] the time to automatically switch from phase 0 to phase 1--45 for stationary; 90 for rotating
+        self.PHASE_1_TIME             = 45 # [s] the time to automatically switch from phase 0 to phase 1--45 for stationary; 90 for rotating
         self.DOCKING_TOO_FAST_PENALTY = 0 # [rewards/s] penalty for docking too quickly
         self.MAX_DOCKING_SPEED        = [0.02, 0.02, 10]
-        self.TARGET_ANGULAR_VELOCITY  = 0.0698 #[rad/s] constant target angular velocity stationary: 0 ; rotating: 0.0698
+        self.TARGET_ANGULAR_VELOCITY  = 0.0 #[rad/s] constant target angular velocity stationary: 0 ; rotating: 0.0698
         self.PENALIZE_VELOCITY        = True # Should the velocity be penalized with severity proportional to how close it is to the desired location? Added Dec 11 2019
         self.VELOCITY_PENALTY         = [0.5, 0.5, 0.0] # [x, y, theta] stationary: [0.5, 0.5, 0.5/250] ; rotating [0.5, 0.5, 0] Amount the chaser should be penalized for having velocity near the desired location
 
@@ -280,9 +280,6 @@ class Environment:
         elif self.phase_number == 1:
             desired_location = self.docking_port
 
-
-        current_position_reward = np.zeros(1)
-
         # Calculates a reward map
         if self.REWARD_TYPE:
             # Linear reward
@@ -430,7 +427,13 @@ def dynamics_equations_of_motion(state, t, parameters):
     x, y, theta, xdot, ydot, thetadot = state
     control_effort, mass, inertia = parameters # unpacking parameters
 
-    derivatives = np.array((xdot, ydot, thetadot, control_effort[0]/mass, control_effort[1]/mass, control_effort[2]/inertia)).squeeze()
+    # Add Clohessy-Wiltshire dynamics
+    n = 0.0011440
+    xddot = 3 * n * n * x + 2 * n * ydot
+    yddot = -2 * n * xdot
+
+    derivatives = np.array((xdot, ydot, thetadot, control_effort[0] / mass + xddot, control_effort[1] / mass + yddot,
+                            control_effort[2] / inertia)).squeeze()
 
     return derivatives
 
