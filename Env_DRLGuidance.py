@@ -32,11 +32,11 @@ class Environment:
         self.IRRELEVANT_STATES        = [0,1,2,6,7] # No obstacle: [0,1,2,6,7] ; Yes obstacle: [0,1,2]
         self.STATE_SIZE               = self.TOTAL_STATE_SIZE - len(self.IRRELEVANT_STATES) # total number of relevant states
         self.ACTION_SIZE              = 3 # [x_dot, y_dot, theta_dot]
-        self.LOWER_ACTION_BOUND       = np.array([-0.05, -0.05, -10*np.pi/180]) # [m/s, m/s, rad/s] stationary=[-0.05, -0.05, -10*np.pi/180]; rotating=[-0.1, -0.1, -10*np.pi/180]
-        self.UPPER_ACTION_BOUND       = np.array([ 0.05,  0.05,  10*np.pi/180]) # [m/s, m/s, rad/s] stationary=[ 0.05,  0.05,  10*np.pi/180]; rotating=[ 0.1,  0.1,  10*np.pi/180]
-        self.LOWER_STATE_BOUND        = np.array([-3.7,  -2.4,  -4*2*np.pi]) # [m, m, rad, m, m, rad, m, m]
-        self.UPPER_STATE_BOUND        = np.array([ 3.7,   2.4,   4*2*np.pi]) # [m, m, rad, m, m, rad, m, m]
-        self.NORMALIZE_STATE          = True # Normalize state on each timestep to avoid vanishing gradients
+        self.LOWER_ACTION_BOUND       = np.array([-0.2, -0.2, -10*np.pi/180]) # [m/s, m/s, rad/s] stationary=[-0.05, -0.05, -10*np.pi/180]; rotating=[-0.1, -0.1, -10*np.pi/180]
+        self.UPPER_ACTION_BOUND       = np.array([ 0.2,  0.2,  10*np.pi/180]) # [m/s, m/s, rad/s] stationary=[ 0.05,  0.05,  10*np.pi/180]; rotating=[ 0.1,  0.1,  10*np.pi/180]
+        self.LOWER_STATE_BOUND        = np.array([0,  0,  -4*2*np.pi, 0, 0,  -4*2*np.pi, 0, 0]) # [m, m, rad, m, m, rad, m, m]
+        self.UPPER_STATE_BOUND        = np.array([ 3.7,   2.4,   4*2*np.pi, 3.7, 2.4,  4*2*np.pi, 3.7, 2.4]) # [m, m, rad, m, m, rad, m, m]
+        self.NORMALIZE_STATE          = False # Normalize state on each timestep to avoid vanishing gradients
         self.RANDOMIZE                = True # whether or not to RANDOMIZE the state & target location
         self.NOMINAL_INITIAL_POSITION = np.array([3.0, 1.0, 0.0])
         self.NOMINAL_TARGET_POSITION  = np.array([1.85, 0.6, np.pi/2]) # stationary=[1.85, 0.6, np.pi/2]; rotating=[1.85, 1.2, 0]
@@ -140,6 +140,7 @@ class Environment:
         # How long is the position portion of the state
         self.POSITION_STATE_LENGTH = len(self.state)
 
+        use_dynamics = False
         if use_dynamics:
             # Setting the dynamics state to be equal, initially, to the kinematics state, plus the velocity initial conditions state
             velocity_initial_conditions = np.array([0., 0., 0.])

@@ -22,7 +22,7 @@ from pyvirtualdisplay import Display # for rendering
 
 from settings import Settings
 from build_neural_networks import BuildActorNetwork
-environment_file = __import__('environment_' + Settings.ENVIRONMENT) # importing the environment
+environment_file = __import__(Settings.ENVIRONMENT) # importing the environment
 
 
 class Agent:

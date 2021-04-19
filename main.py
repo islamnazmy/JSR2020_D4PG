@@ -129,7 +129,7 @@ for each_file in glob.glob('*.py'):
 #######################################
 with tf.Session(config = config) as sess:
     print("\nThis run is named " + filename)
-    print("\nThe environment file is: environment_" + Settings.ENVIRONMENT + '\n')
+    print("\nThe environment file is: " + Settings.ENVIRONMENT + '\n')
     if Settings.TEST_ON_DYNAMICS:
         print("At test time, full dynamics are being used\n")
     else:
@@ -196,7 +196,7 @@ with tf.Session(config = config) as sess:
             with tf.device('/device:CPU:0'):
                 # Forcing to the CPU only
                 # Make an instance of the environment which will be placed in its own process
-                environment_file = __import__('environment_' + Settings.ENVIRONMENT)
+                environment_file = __import__(Settings.ENVIRONMENT)
                 if Settings.ENVIRONMENT == 'gym':
                     environment = environment_file.Environment(filename, i+1, Settings.CHECK_GREEDY_PERFORMANCE_EVERY_NUM_EPISODES, Settings.VIDEO_RECORD_FREQUENCY, Settings.MODEL_SAVE_DIRECTORY) # Additional parameters needed for gym
                 else:

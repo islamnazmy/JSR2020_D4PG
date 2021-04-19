@@ -10,7 +10,7 @@ class Settings:
     ##### Run Settings #####
     ########################
 
-    RUN_NAME               = 'Kirkados_default_run' # use just the name. If trying to restore from file, use name along with timestamp
+    RUN_NAME               = 'ASEN5519_D4PG' # use just the name. If trying to restore from file, use name along with timestamp
     ENVIRONMENT            = 'Env_DRLGuidance'
     RECORD_VIDEO           = False
     VIDEO_RECORD_FREQUENCY = 20 # Multiples of "CHECK_GREEDY_PERFORMANCE_EVERY_NUM_EPISODES"
@@ -98,7 +98,7 @@ class Settings:
     #### Environment Settings ####
     ##############################
 
-    environment_file = __import__('environment_' + ENVIRONMENT)
+    environment_file = __import__(ENVIRONMENT)
     if ENVIRONMENT == 'gym':
         env = environment_file.Environment('Temporary environment', 0, CHECK_GREEDY_PERFORMANCE_EVERY_NUM_EPISODES, VIDEO_RECORD_FREQUENCY, MODEL_SAVE_DIRECTORY) # Additional parameters needed for gym
     else:
