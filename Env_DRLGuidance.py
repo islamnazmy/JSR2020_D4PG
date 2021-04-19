@@ -312,7 +312,7 @@ class Environment:
             reward -= self.FALL_OFF_TABLE_PENALTY/self.TIMESTEP
 
         # Giving a large reward for completing the task
-        if np.sum(np.absolute(self.state[:self.POSITION_STATE_LENGTH] - desired_location)) < 0.01:
+        if np.sum(np.absolute(self.state[:self.POSITION_STATE_LENGTH] - desired_location)) < 0.1:
             reward += self.GOAL_REWARD
             
         # Giving a large penalty for colliding with the obstacle
