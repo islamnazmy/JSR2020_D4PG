@@ -54,7 +54,7 @@ class Agent:
 
         # If we want to record video, launch one hidden display
         if Settings.RECORD_VIDEO and self.n_agent == 1:
-            self.display = Display(visible = False, size = (1400,900))
+            self.display = Display(visible = True, size = (1400,900))
             self.display.start()
 
         print("Agent %i initialized!" % self.n_agent)

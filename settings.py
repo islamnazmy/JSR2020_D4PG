@@ -12,7 +12,7 @@ class Settings:
 
     RUN_NAME               = 'ASEN5519_D4PG' # use just the name. If trying to restore from file, use name along with timestamp
     ENVIRONMENT            = 'Env_DRLGuidance'
-    RECORD_VIDEO           = False
+    RECORD_VIDEO           = True
     VIDEO_RECORD_FREQUENCY = 20 # Multiples of "CHECK_GREEDY_PERFORMANCE_EVERY_NUM_EPISODES"
     NOISELESS_AT_TEST_TIME = True # Whether or not to test without action noise (Keep at True unless debugging)
     LEARN_FROM_PIXELS      = False # False = learn from state (fully observed); True = learn from pixels (partially observed)
@@ -27,7 +27,7 @@ class Settings:
 
     # Hyperparameters
     NUMBER_OF_ACTORS        = 10
-    NUMBER_OF_EPISODES      = 5e4 # that each agent will perform
+    NUMBER_OF_EPISODES      = 2000 # that each agent will perform
     MAX_TRAINING_ITERATIONS = 1e6 # of neural networks
     ACTOR_LEARNING_RATE     = 0.0001
     CRITIC_LEARNING_RATE    = 0.0001
